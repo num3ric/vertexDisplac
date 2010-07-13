@@ -95,7 +95,6 @@ void vertexDisplacApp::setup()
 	*/
 	float half = SIDE/2.0f;
 	int totalVertices = SIDE * SIDE;
-	int totalQuads = ( SIDE - 1 ) * ( SIDE - 1 );
 	vector<Vec2f> texCoords;
 	vector<Vec3f> vCoords, normCoords;
 	vector<uint32_t> indices;
@@ -104,15 +103,10 @@ void vertexDisplacApp::setup()
 	layout.setStaticPositions();
 	layout.setStaticTexCoords2d();
 	layout.setStaticNormals();
-	mVboMesh = gl::VboMesh( totalVertices, totalQuads * 4, layout, GL_POINTS); // GL_LINES GL_QUADS
+	mVboMesh = gl::VboMesh( totalVertices, totalVertices, layout, GL_POINTS); // GL_LINES GL_QUADS
 	for( int x = 0; x < SIDE; ++x ) {
 		for( int y = 0; y < SIDE; ++y ) {	
-			if( ( x + 1 < SIDE ) && ( y + 1 < SIDE ) ) {
-				indices.push_back( (x+0) * SIDE + (y+0) );
-				indices.push_back( (x+1) * SIDE + (y+0) );
-				indices.push_back( (x+1) * SIDE + (y+1) );
-				indices.push_back( (x+0) * SIDE + (y+1) );
-			}
+			indices.push_back( x * SIDE + y );
 			texCoords.push_back( Vec2f( x/(float)SIDE, y/(float)SIDE ) );
 			vCoords.push_back( PLANEWIDTH*Vec3f( (x-half)/(float)SIDE, 0, (y-half)/(float)SIDE ) );
 			normCoords.push_back( Vec3f( 0.0f, 1.0f, 0.0f ));
@@ -133,7 +127,7 @@ void vertexDisplacApp::resize( int width, int height )
 	mArcball.setCenter( Vec2f( getWindowWidth() / 2.0f, getWindowHeight() / 2.0f ) );
 	mArcball.setRadius( getWindowHeight() / 2.0f );
 	
-	mCam.lookAt( Vec3f( 0.0f, -80.0f, -450.0f ), Vec3f::zero() );
+	mCam.lookAt( Vec3f( 0.0f, 0.0f, -450.0f ), Vec3f::zero() );
 	mCam.setPerspective( 60.0f, getWindowAspectRatio(), 0.1f, 2000.0f );
 	gl::setMatrices( mCam );
 }
