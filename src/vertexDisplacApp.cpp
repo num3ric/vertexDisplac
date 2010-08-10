@@ -21,7 +21,7 @@ class vertexDisplacApp : public AppBasic {
 public:
 	void	prepareSettings( Settings *settings );
 	void	setup();
-	void	resize( int width, int height );
+	void	resize( ResizeEvent event );
 	void    mouseDown( MouseEvent event );
 	void    mouseDrag( MouseEvent event );
 	void	draw();
@@ -121,7 +121,7 @@ void vertexDisplacApp::setup()
 	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
-void vertexDisplacApp::resize( int width, int height )
+void vertexDisplacApp::resize( ResizeEvent event )
 {
 	mArcball.setWindowSize( getWindowSize() );
 	mArcball.setCenter( Vec2f( getWindowWidth() / 2.0f, getWindowHeight() / 2.0f ) );
