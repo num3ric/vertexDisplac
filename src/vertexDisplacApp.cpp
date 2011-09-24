@@ -21,7 +21,7 @@ class vertexDisplacApp : public AppBasic {
 public:
 	void	prepareSettings( Settings *settings );
 	void	setup();
-	void	resize( int width, int height );
+	void	resize( ResizeEvent event );
 	void    mouseDown( MouseEvent event );
 	void    mouseDrag( MouseEvent event );
 	void	draw();
@@ -30,9 +30,9 @@ public:
 	Arcball			mArcball;
 	gl::Fbo			mFBO;
 	
-	gl::Texture		mTexture;
+	gl::Texture		mTexture, mTexture2;
 	gl::VboMesh		mVboMesh;
-	gl::GlslProg	mShader;
+	gl::GlslProg	mShader, mMulti;
 };
 
 void vertexDisplacApp::prepareSettings( Settings *settings )
@@ -47,6 +47,7 @@ void vertexDisplacApp::setup()
 	//====== Shader ======
 	try {
 		mShader = gl::GlslProg( loadResource( "vDispl.vert" ), loadResource( "vDispl.frag" ));
+		mMulti = gl::GlslProg( loadResource( "multi.vert" ), loadResource( "multi.frag" ));
 	}
 	catch( ci::gl::GlslProgCompileExc &exc ) {
 		std::cout << "Shader compile error: " << std::endl;
@@ -61,26 +62,44 @@ void vertexDisplacApp::setup()
 	mTexture.setWrap( GL_REPEAT, GL_REPEAT );
 	mTexture.setMinFilter( GL_NEAREST );
 	mTexture.setMagFilter( GL_NEAREST );
+	mTexture2 = gl::Texture( loadImage( loadResource( "water.jpg" ) ) );
+	mTexture2.setWrap( GL_REPEAT, GL_REPEAT );
+	mTexture2.setMinFilter( GL_NEAREST );
+	mTexture2.setMagFilter( GL_NEAREST );
 	
 	//======  FBO ======
 	gl::Fbo::Format format;
 	//format.enableDepthBuffer(false);
-	format.enableColorBuffer(true);
+	format.enableColorBuffer(true, 2);
+	format.setMinFilter( GL_NEAREST );
+	format.setMagFilter( GL_NEAREST );
 	format.setColorInternalFormat( GL_RGBA32F_ARB );
 	mFBO = gl::Fbo( SIDE, SIDE, format );
 	
 	mFBO.bindFramebuffer();
-	
 	gl::setMatricesWindow( mFBO.getSize(), false );
 	gl::setViewport( mFBO.getBounds() );
 	
-	mTexture.enableAndBind();
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+	GLenum buf[2] = {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT};
+	glDrawBuffers(2, buf);
+	mTexture.bind(0);
+	mTexture2.bind(1);
+	mMulti.bind();
+	mMulti.uniform("tex0", 0);
+	mMulti.uniform("tex1", 1);
 	
-	gl::drawSolidRect( mFBO.getBounds() );
+	glBegin(GL_QUADS);
+		glTexCoord2f( 0.0f, 0.0f); glVertex2f( 0.0f, 0.0f);
+		glTexCoord2f( 0.0f, 1.0f); glVertex2f( 0.0f, SIDE);
+		glTexCoord2f( 1.0f, 1.0f); glVertex2f( SIDE, SIDE);
+		glTexCoord2f( 1.0f, 0.0f); glVertex2f( SIDE, 0.0f);
+	glEnd();
+	
+	mMulti.unbind();
 	mTexture.unbind();
+	mTexture2.unbind();
 	mFBO.unbindFramebuffer();
+	
 	//console()<<"Fbo target"<< mFBO.getTarget()<<std::endl;
 	//console()<<"Texture target"<< mTexture.getTarget()<<std::endl;
 	console()<<SIDE*SIDE<<" vertices!!!"<<std::endl;
@@ -121,7 +140,7 @@ void vertexDisplacApp::setup()
 	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
-void vertexDisplacApp::resize( int width, int height )
+void vertexDisplacApp::resize( ResizeEvent event )
 {
 	mArcball.setWindowSize( getWindowSize() );
 	mArcball.setCenter( Vec2f( getWindowWidth() / 2.0f, getWindowHeight() / 2.0f ) );
@@ -146,11 +165,19 @@ void vertexDisplacApp::mouseDrag( MouseEvent event )
 void vertexDisplacApp::draw()
 {
 	gl::clear( ColorA( 0.0f, 0.0f, 0.0f, 1.0f ) );
-	glEnable( mFBO.getTarget() );
-	mFBO.bindTexture();
+	//glEnable( mFBO.getTarget() );
+	
+	mFBO.bindTexture(0, 0);
+	mFBO.bindTexture(1, 1);
+	/*
+	 * Try the following and notice how the water texture is now used for displacement.
+	 */
+//	mFBO.bindTexture(0, 1);
+//	mFBO.bindTexture(1, 0);
+	
 	mShader.bind();
 	mShader.uniform("colorMap", 0 );
-	mShader.uniform("displacementMap", 0 );
+	mShader.uniform("displacementMap", 1 );
 	
 	gl::pushModelView();
 		gl::translate( Vec3f( 0.0f, 0.0f, getWindowHeight() / 2.0f ) );

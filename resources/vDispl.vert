@@ -10,7 +10,7 @@ void main()
 	vec4 dv;
 	float df;
 	
-	gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;
+	gl_TexCoord[0] = gl_MultiTexCoord0;
 	
 	dv = texture2D( displacementMap, gl_MultiTexCoord0.xy );
 	
